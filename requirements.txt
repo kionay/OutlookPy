@@ -1,0 +1,3 @@
+pypiwin32==223
+python-whois==0.7.0
+pywin32==224
