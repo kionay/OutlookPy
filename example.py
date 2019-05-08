@@ -13,7 +13,7 @@ Subject: {mail_item.subject}
 
 @my_outlook.deleted.on_item_received()
 def deleted_test(mail_item):
-    print("deleted test activated")
+    print(f"mail item {mail_item.subject} deleted")
     
 
 my_outlook.inbox.dispatch_unread()
