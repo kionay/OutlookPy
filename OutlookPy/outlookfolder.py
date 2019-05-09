@@ -55,11 +55,10 @@ class OutlookFolder(object):
             except Exception as e:
                 print(e)
                 ctypes.windll.user32.PostQuitMessage(0)
-    def OnItemRemove(self, mail):
-        mail = OutlookItem(mail)
+    def OnItemRemove(self):
         for handler in self._attached_handlers["remove"]:
             try:
-                result = handler(mail)
+                result = handler()
                 if not result:
                     break
             except Exception as e:
