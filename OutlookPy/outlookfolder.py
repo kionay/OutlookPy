@@ -1,10 +1,12 @@
 from __future__ import annotations
 from typing import List, Dict
-from .outlookitem import OutlookItem
+
 import win32com.client
 from win32com.client import Dispatch
-from .alternatedispatch import WithEvents
 import pythoncom
+
+from outlookpy.alternatedispatch import WithEvents
+from outlookpy.outlookitem import OutlookItem
 
 
 class OutlookFolder(object):

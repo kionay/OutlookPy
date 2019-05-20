@@ -11,7 +11,7 @@ These requirements are for interfacing with Microsoft Outlook's COM API.
 ### Attaching to outlook is as easy as instantiating an object.
 
 ```python
-from OutlookPy import OutlookPy
+from outlookpy import OutlookPy
 my_outlook = OutlookPy()
 ```
 
@@ -83,65 +83,7 @@ outlook.listen_for_events()
 # a blocking operation means you will no longer be able to provide input to python
 ```
 
-## API Object Details
-
-### Currently available mail item attributes
-
-__read__
- - **Get**/**Set** the read status of an outlook item.
- 
-__unread__\*
- - **Get**/**Set** the inverse of the read status of an outlook item.
- 
-__recipients__
- - **Get**/~~Set~~\*\* the list of SMTP addresses to recieve this outlook item.
- 
-__categories__
- - **Get**/~~Set~~\*\* the list of names outlook categories associated with this outlook item.
- 
-__sender__
- - **Get**/~~Set~~\*\* the name of a given outlook item's sender, if it can be obtained.
- 
-__body__
- - **Get**/~~Set~~\*\* the body of a given outlook item.
- 
-__subject__
- - **Get**/~~Set~~\*\* the subject line of a given outlook item.
- 
-__external__
- - **Get** to tell if the given outlook item came from within the same exchange group/forest.
- 
-__internal__\*
- - **Get** the inverse of external.
- 
-__type__
- - **Get** the class or category of outlook item. Currently this is an enumeration, but when this is split into subclasses it will provide a subclass type.
- 
-__received_datetime__
- - **Get**/**Set** the receieved datetime of an outlook item. The setter is only valid on drafts, which are themselves not fully implemented so I would advise pretending this was readonly.
- 
-__body_format__
- - **Get**/**Set** the format of a given outlook item. This can be used to change between richtext, and HTML formats.
- 
-__containing_folder__
- - **Get** the library folder object containing the given outlook item. Akin to a *Parent* attribute, as that is what is used internally.
- 
-__importance__
- - **Get**/**Set** the *importance* attribute on a given outlook item. Corresponds to an OutlookItemImportance enumeration of high/normal/low.
-
-\*: QoL addition.
-
-\*\*: Some setters, when harder to implement than their getters, will come later. Also, some attributes will be moved to subclasses in the future, and their respective getters/setters will change in response. Some setters will only apply to item drafts yet to be sent. As odd as it is, some attributes are read only some of the time, and read/write some of the time.
-
-
-### Currently available mailitem methods
-
-__delete__
- - **Void** - Moves the outlook item to the Deleted Items folder, does not permanently delete unless it's already in that folder.
- 
-__move__
- - **Folder** - Moves the outlook item to the specified folder. Uses this library's folder object, so we can pretend that MAPIFolders don't exist.
-
+### Documentation will be created in a /docs/ folder, instead of in the readme.
 
 
 ### TODO:

@@ -1,4 +1,4 @@
-from OutlookPy import OutlookPy,OutlookItem,OutlookItemType
+from outlookpy import OutlookPy
 
 my_outlook = OutlookPy()
 print("Initializing handler functions")

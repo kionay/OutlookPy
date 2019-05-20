@@ -1,43 +1,19 @@
-from enum import Enum
+"""All outlook item wrappers."""
 from datetime import datetime
+from typing import List, Tuple, TYPE_CHECKING
+
 from pywintypes import com_error
 
-
-from typing import List, TYPE_CHECKING
-
+from outlookpy.constants import *
 if TYPE_CHECKING:
-    from .outlookfolder import OutlookFolder
+    from outlookpy.outlookfolder import OutlookFolder
+from .outlookenumerations import OutlookItemType, OutlookResponse, OutlookItemImportance, OutlookItemBodyFormat
 
-from .constants import *
-
-
-class OutlookItemType(Enum):
-    """
-    imitates OlObjectClass Enumeration
-    win32com has constants, but they're not divided up by enumeration class.
-    """
-    MailItem = [43]
-    MeetingRequest = [53]
-    MeetingResponse = [55,56,57]
-    MeetingNotice = [54,181]
-    Appointment = [26]
-    DistributionList = [69]
-    Task = [48]
-
-class OutlookItemImportance(Enum):
-    HIGH = 2
-    NORMAL = 1
-    LOW = 0
-
-class OutlookItemBodyFormat(Enum):
-    unspecified = 0
-    plain = 1
-    rich_text = 2
-    html = 3
 
 class OutlookItem(object):
     """
-    Wrapper class for outlook mail items.
+    Base wrapping class for outlook items.
+    Represents the common functions of all other outlook item types.
     May need divided into AppointmentItem, JournalItem, MailItem, MeetingItem, and TaskItem.
     """
     def __init__(self, mail_item):
@@ -173,3 +149,32 @@ class OutlookItem(object):
         return f"{self.__class__.__name__}({self.subject})"
     def __hash__(self):
         return hash(self._local_id)
+
+class OutlookMailItem(OutlookItem):
+    """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.mailitem?view=outlook-pia"""
+
+class OutlookAppointmentItem(OutlookItem):
+    """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.appointmentitem?view=outlook-pia"""
+
+class OutlookMeetingItem(OutlookItem):
+    """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.meetingitem?view=outlook-pia"""
+    MeetingResponse = Tuple[str, OutlookResponse]
+    MeetingResponses = List[MeetingResponse]
+    @property
+    def responses(self) -> MeetingResponses:
+        if self._responses is not None:
+            return self._responses
+        responses = []
+        for recipient in self._mail_item.Recipients:
+            responses.append(recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS), OutlookResponse(recipient.MeetingResponseStatus))
+        self._responses = responses
+        return responses
+
+class OutlookJournalItem(OutlookItem):
+    """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.journalitem?view=outlook-pia"""
+
+class OutlookTaskItem(OutlookItem):
+    """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.taskitem?view=outlook-pia"""
+
+
+
