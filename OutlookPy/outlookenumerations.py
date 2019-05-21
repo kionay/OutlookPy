@@ -32,6 +32,21 @@ class OutlookItemBodyFormat(Enum):
     rich_text = 2
     html = 3
 
+class OutlookTaskResponse(Enum):
+    """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.oltaskresponse"""
+    simple = 0
+    assigned = 1
+    accepted = 2
+    declined = 3
+
+class OutlookTaskStatus(Enum):
+    """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.oltaskstatus"""
+    not_started = 0
+    in_progress = 1
+    completed = 2
+    waiting = 3
+    deferred = 4
+
 class OutlookResponse(Enum):
     """
     If a Recipient is a recipient of a meeting, their MeetingResponseStatus will use this.

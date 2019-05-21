@@ -7,7 +7,7 @@ from pywintypes import com_error
 from outlookpy.constants import *
 if TYPE_CHECKING:
     from outlookpy.outlookfolder import OutlookFolder
-from .outlookenumerations import OutlookItemType, OutlookResponse, OutlookItemImportance, OutlookItemBodyFormat
+from .outlookenumerations import OutlookItemType, OutlookResponse, OutlookItemImportance, OutlookItemBodyFormat, OutlookTaskResponse, OutlookTaskStatus
 
 
 class OutlookItem(object):
@@ -16,22 +16,22 @@ class OutlookItem(object):
     Represents the common functions of all other outlook item types.
     May need divided into AppointmentItem, JournalItem, MailItem, MeetingItem, and TaskItem.
     """
-    def __init__(self, mail_item):
-        self._mail_item = mail_item
+    def __init__(self, outlook_item):
+        self._internal_item = outlook_item
         self._sender = None
         self._recipients = None
     @property
     def _local_id(self):
         """Closest thing to a unique ID we're going to get for an outlook item"""
-        return self._mail_item.EntryID
+        return self._internal_item.EntryID
     def delete(self):
         """moves the item to the Deleted Items folder, does not permanently delete unless it's already in that folder"""
-        self._mail_item.Delete()
+        self._internal_item.Delete()
     def move(self, folder):
-        self._mail_item = self._mail_item.Move(folder._folder) 
+        self._internal_item = self._internal_item.Move(folder._folder) 
     @property
     def containing_folder(self):
-        return OutlookFolder(self._mail_item.Parent)
+        return OutlookFolder(self._internal_item.Parent)
     @property
     def recipients(self) -> List[str]:
         # recipeints might have to make an external call to get this information
@@ -40,28 +40,28 @@ class OutlookItem(object):
         if self._recipients is not None:
             return self._recipients
         recipient_addresses = []
-        for recipient in self._mail_item.Recipients:
+        for recipient in self._internal_item.Recipients:
             recipient_addresses.append(recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS))
         self._recipients = recipient_addresses
         return recipient_addresses
     @property
     def categories(self) -> List[str]:
-        categories = self._mail_item.Categories.split(", ")
+        categories = self._internal_item.Categories.split(", ")
         if categories == ['']:
             return []
         return categories
     @property
     def read(self) -> bool:
-        return not self._mail_item.UnRead
+        return not self._internal_item.UnRead
     @read.setter
     def read(self, read_status: bool):
-        self._mail_item.UnRead = not read_status
+        self._internal_item.UnRead = not read_status
     @property
     def unread(self) -> bool:
-        return self._mail_item.UnRead
+        return self._internal_item.UnRead
     @unread.setter
     def unread(self, unread_status: bool):
-        self._mail_item.UnRead = unread_status
+        self._internal_item.UnRead = unread_status
     def _try_get_sender_remote(self):
         remote_properties = [
             PR_SENT_REPRESENTING_EMAIL_ADDRESS_W,
@@ -70,11 +70,11 @@ class OutlookItem(object):
             PR_SMTP_ADDRESS,
             PR_SENDER_SMTP_ADDRESS,
             PR_LAST_MODIFIER_NAME_W]
-        core_mail_item = self._mail_item
+        core_internal_item = self._internal_item
         sender_sample = None
         for remote_property in remote_properties:
             try:
-                sender_sample = core_mail_item.PropertyAccessor.GetProperty(remote_property)
+                sender_sample = core_internal_item.PropertyAccessor.GetProperty(remote_property)
             except Exception:
                 sender_sample = None
             finally:
@@ -99,50 +99,50 @@ class OutlookItem(object):
 
     @property
     def body(self) -> str:
-        return self._mail_item.Body
+        return self._internal_item.Body
     @property
     def subject(self) -> str:
-        return self._mail_item.Subject
+        return self._internal_item.Subject
     @property
     def external(self) -> bool:
         # Sender Email Type 'EX' stands for 'EXchange' not 'external
         # i have only ever seen the SenderEmailType be either "EX" or "SMTP"
-        return self._mail_item.SenderEmailType != "EX"
+        return self._internal_item.SenderEmailType != "EX"
     @property
     def internal(self) -> bool:
         # Sender Email Type 'EX' stands for 'EXchange' not 'external
-        return self._mail_item.SenderEmailType == "EX"
+        return self._internal_item.SenderEmailType == "EX"
     @property
     def type(self) -> OutlookItemType:
         for item_type in OutlookItemType:
-            if self._mail_item.Class in item_type.value:
+            if self._internal_item.Class in item_type.value:
                 return item_type
         return None
     @property
     def importance(self) -> OutlookItemImportance:
         for item_importance in OutlookItemImportance:
-            if self._mail_item.Importance == item_importance.value:
+            if self._internal_item.Importance == item_importance.value:
                 return item_importance
         return None
     @importance.setter
     def importance(self, importance: OutlookItemImportance):
         if not isinstance(importance, OutlookItemImportance):
             raise TypeError("importance must be of type OutlookItemImportance")
-        self._mail_item.Importance = importance.value
+        self._internal_item.Importance = importance.value
     @property
-    def received_datetime(self) -> datetime:
-        return self._mail_item.ReceivedTime
-    @received_datetime.setter
-    def received_datetime(self, received_datetime: datetime):
-        self._mail_item.ReceivedTime = received_datetime
+    def received(self) -> datetime:
+        return self._internal_item.ReceivedTime
+    @received.setter
+    def received(self, received: datetime):
+        self._internal_item.ReceivedTime = received
     @property
     def body_format(self) -> str:
-        return OutlookItemBodyFormat(self._mail_item.BodyFormat).name
+        return OutlookItemBodyFormat(self._internal_item.BodyFormat).name
     @body_format.setter
     def body_format(self, body_format: str):
         for possible_format in OutlookItemBodyFormat:
             if possible_format.name == body_format.lower():
-                self._mail_item.BodyFormat = possible_format.value
+                self._internal_item.BodyFormat = possible_format.value
                 return
         raise ValueError(f"Body Format ({body_format}) is not a valid format for the body of this item.")
     def __repr__(self):
@@ -165,16 +165,121 @@ class OutlookMeetingItem(OutlookItem):
         if self._responses is not None:
             return self._responses
         responses = []
-        for recipient in self._mail_item.Recipients:
+        for recipient in self._internal_item.Recipients:
             responses.append(recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS), OutlookResponse(recipient.MeetingResponseStatus))
         self._responses = responses
         return responses
 
 class OutlookJournalItem(OutlookItem):
     """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.journalitem?view=outlook-pia"""
+    @property
+    def posted(self) -> bool:
+        return self._internal_item.DocPosted
+    @posted.setter
+    def posted(self, posted: bool):
+        self._internal_item.DocPosted = posted
+    @property
+    def printed(self) -> bool:
+        return self._internal_item.DocPrinted
+    @printed.setter
+    def printed(self, printed: bool):
+        self._internal_item.DocPrinted = printed
+    @property
+    def routed(self) -> bool:
+        return self._internal_item.DocPosted
+    @posted.setter
+    def routed(self, routed: bool):
+        self._internal_item.DocRouted = routed
+    @property
+    def saved(self) -> bool:
+        return self._internal_item.DocPosted
+    @saved.setter
+    def saved(self, saved: bool):
+        self._internal_item.DocSaved = saved
+    @property
+    def duration(self) -> int:
+        """integer duration in minutes"""
+        return self._internal_item.Duration
+    @duration.setter
+    def duration(self, duration: int):
+        self._internal_item.Duration = duration
+    @property
+    def start(self) -> datetime:
+        return self._internal_item.Start
+    @start.setter
+    def start(self, start: datetime):
+        self._internal_item.Start = start
+    @property
+    def end(self) -> datetime:
+        return self._internal_item.End
+    @end.setter
+    def end(self, end: datetime):
+        self._internal_item.End = end
+    
 
 class OutlookTaskItem(OutlookItem):
     """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.taskitem?view=outlook-pia"""
-
-
+    @property
+    def due(self) -> datetime:
+        return self._internal_item.DueDate
+    @due.setter
+    def due(self, due: datetime):
+        self._internal_item.DueDate = due
+    @property
+    def card_data(self) -> str:
+        return self._internal_item.CardData
+    @card_data.setter
+    def card_data(self, data: str):
+        self._internal_item.CardData = data
+    @property
+    def actual_work(self) -> int:
+        return self._internal_item.ActualWork
+    @actual_work.setter
+    def actual_work(self, work: int):
+        self._internal_item.ActualWork = work
+    @property
+    def complete(self) -> bool:
+        return self._internal_item.Complete
+    @complete.setter
+    def complete(self, complete: bool):
+        self._internal_item.Complete = complete
+    @property
+    def date_completed(self) -> datetime:
+        return self._internal_item.DateCompleted
+    @date_completed.setter
+    def date_completed(self, date_completed: datetime):
+        self._internal_item.DateCompleted = date_completed
+    @property
+    def conflict(self) -> bool:
+        return self._internal_item.IsConflict
+    @property
+    def recurring(self) -> bool:
+        return self._internal_item.IsRecurring
+    @property
+    def owner(self) -> str:
+        return self._internal_item.Owner
+    @owner.setter
+    def owner(self, owner: str):
+        self._internal_item.Owner = owner
+    @property
+    def response(self) -> str:
+        return OutlookTaskResponse(self._internal_item.ResponseState).name
+    @property
+    def role(self) -> str:
+        return self._internal_item.Role
+    @role.setter
+    def role(self, role: str):
+        self._internal_item.Role = role
+    @property
+    def schedule_plus_priority(self) -> str:
+        return self._internal_item.SchedulePlusPriority
+    @schedule_plus_priority.setter
+    def schedule_plus_priority(self, priority: str):
+        self._internal_item.SchedulePlusPriority = priority
+    @property
+    def status(self) -> str:
+        return OutlookTaskStatus(self._internal_item.Status).name
+    @status.setter
+    def status(self, status: str):
+        return 
 
