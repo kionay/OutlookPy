@@ -32,6 +32,20 @@ class OutlookItemBodyFormat(Enum):
     rich_text = 2
     html = 3
 
+class OutlookRecipientType(Enum):
+    """https://docs.microsoft.com/en-us/office/vba/api/outlook.recipient.type"""
+    mail_originator = 0
+    mail_to = 1
+    mail_cc = 2
+    mail_bcc = 3
+    meeting_organizer = 0
+    meeting_required = 1
+    meeting_optional = 2
+    meeting_resource = 3
+    journal_contact = 1
+    task_update = 2
+    task_final_status = 3
+
 class OutlookTaskResponse(Enum):
     """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.oltaskresponse"""
     simple = 0

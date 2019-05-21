@@ -7,7 +7,7 @@ from pywintypes import com_error
 from outlookpy.constants import *
 if TYPE_CHECKING:
     from outlookpy.outlookfolder import OutlookFolder
-from .outlookenumerations import OutlookItemType, OutlookResponse, OutlookItemImportance, OutlookItemBodyFormat, OutlookTaskResponse, OutlookTaskStatus
+from .outlookenumerations import OutlookItemType, OutlookResponse, OutlookItemImportance, OutlookItemBodyFormat, OutlookTaskResponse, OutlookTaskStatus, OutlookRecipientType
 
 
 class OutlookItem(object):
@@ -152,6 +152,13 @@ class OutlookItem(object):
 
 class OutlookMailItem(OutlookItem):
     """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.mailitem?view=outlook-pia"""
+    @property
+    def alternate_recipient_allowed(self) -> bool:
+        return self._internal_item.AlternateRecipientAllowed
+    @alternate_recipient_allowed.setter
+    def alternate_recipient_allowed(self, alternate_allowed: bool):
+        self._internal_item.AlternateRecipientAllowed = alternate_allowed
+    
 
 class OutlookAppointmentItem(OutlookItem):
     """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.appointmentitem?view=outlook-pia"""
@@ -281,5 +288,19 @@ class OutlookTaskItem(OutlookItem):
         return OutlookTaskStatus(self._internal_item.Status).name
     @status.setter
     def status(self, status: str):
-        return 
-
+        self._internal_item.Status = OutlookTaskStatus[status].value
+    @status.setter
+    def status(self, status: OutlookTaskStatus):
+        self._internal_item.Status = status.value
+    @property
+    def team(self) -> bool:
+        return self._internal_item.TeamTask
+    @team.setter
+    def team(self, isteamtask: bool):
+        self._internal_item.TeamTask = isteamtask
+    @property
+    def todo_ordinal(self) -> datetime:
+        return self._internal_item.ToDoTaskOrdinal
+    @todo_ordinal.setter
+    def todo_ordinal(self, ordinal: datetime):
+        self._internal_item.ToDoTaskOrdinal = ordinal
