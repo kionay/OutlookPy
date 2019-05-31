@@ -8,18 +8,18 @@ from outlookpy.constants import *
 if TYPE_CHECKING:
     from outlookpy.outlookfolder import OutlookFolder
 from .outlookenumerations import OutlookItemType, OutlookResponse, OutlookItemImportance, OutlookItemBodyFormat, OutlookTaskResponse, OutlookTaskStatus, OutlookRecipientType
-
+from outlookpy import com_to_python
 
 class OutlookItem(object):
     """
     Base wrapping class for outlook items.
     Represents the common functions of all other outlook item types.
-    May need divided into AppointmentItem, JournalItem, MailItem, MeetingItem, and TaskItem.
     """
     def __init__(self, outlook_item):
         self._internal_item = outlook_item
         self._sender = None
         self._recipients = None
+        self._parent = None
     @property
     def _local_id(self):
         """Closest thing to a unique ID we're going to get for an outlook item"""
@@ -32,6 +32,21 @@ class OutlookItem(object):
     @property
     def containing_folder(self):
         return OutlookFolder(self._internal_item.Parent)
+    @property
+    def parent(self):
+        if self._parent is None:
+            this_convo = self._internal_item.GetConversation()
+            this_parent = this_convo.GetParent(self._internal_item)
+            if this_parent is not None:
+                self._parent = com_to_python(this_parent)
+            else:
+                self._parent = None
+        return self._parent
+    @property
+    def children(self):
+        this_convo = self._internal_item.GetConversation()
+        children = [com_to_python(obj) for obj in this_convo.GetChildren(self._internal_item)._dispobj_]
+        return children
     @property
     def recipients(self) -> List[str]:
         # recipeints might have to make an external call to get this information
@@ -89,7 +104,7 @@ class OutlookItem(object):
     def sender(self) -> str:
         if self._sender is not None:
             return self._sender
-        if self.type == OutlookItemType.Task:
+        if type(self) == OutlookTaskItem:
             return None # Tasks are not "sent" so they can have no sender
         smtp = self._try_get_sender_remote()
         if smtp is not None and "@" in smtp:
@@ -112,12 +127,6 @@ class OutlookItem(object):
     def internal(self) -> bool:
         # Sender Email Type 'EX' stands for 'EXchange' not 'external
         return self._internal_item.SenderEmailType == "EX"
-    @property
-    def type(self) -> OutlookItemType:
-        for item_type in OutlookItemType:
-            if self._internal_item.Class in item_type.value:
-                return item_type
-        return None
     @property
     def importance(self) -> OutlookItemImportance:
         for item_importance in OutlookItemImportance:

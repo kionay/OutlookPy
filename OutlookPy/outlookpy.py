@@ -5,7 +5,6 @@ import ctypes
 import pythoncom
 import win32com.client
 from win32com.client import constants, DispatchBaseClass
-from outlookpy.outlookitem import OutlookItem
 from outlookpy.outlookfolder import OutlookFolder
 from outlookpy.constants import *
 

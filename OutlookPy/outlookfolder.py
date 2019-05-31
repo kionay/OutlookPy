@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import List, Dict
+from enum import Enum
 
 import win32com.client
 from win32com.client import Dispatch
@@ -7,9 +8,10 @@ import pythoncom
 
 from outlookpy.alternatedispatch import WithEvents
 from outlookpy.outlookitem import OutlookItem
+from outlookpy.helpers import com_to_python
 
 
-class OutlookFolder(object):
+class OutlookFolder(list):
     """
     Wrapper class for outlook folders. MAPIFolder
     Acts like an iterable of OutlookItem objects
@@ -26,6 +28,17 @@ class OutlookFolder(object):
         self._folders = {sub_folder.Name:OutlookFolder(sub_folder) for sub_folder in folder.Folders}
         self._attached_handlers = {"add":[],"remove":[],"change":[]}
         self._internal_proxy = None
+    def __eq__(self, other):
+        return self._local_id == other._local_id
+    def __ne__(self, other):
+        return not (self == other)
+    def __iter__(self):
+        for item in self._MAPI_items:
+            yield com_to_python(item)
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.name})"
+    def __hash__(self):
+        return hash(self._local_id)
     @property
     def _local_id(self):
         """the closest thing to a unqiue ID we have"""
@@ -33,22 +46,11 @@ class OutlookFolder(object):
     @property
     def name(self) -> str:
         """given or well-known folder name, only unque amongst its parent folder"""
-        return self._folder.Name
-    @property
-    def items(self) -> List[OutlookItem]:
-        """
-        every time folder items are accessed we re-wrap each folder's items
-        ideally only new items would be added and only non-existing items removed
-        but since wrapping these is not yet an expensive operation and set() keeps it unique
-        i see no problem to just re-wrap everything
-        the best solution would be to have event handlers for on_add and on_remove to each folder
-        but until i delve into the entire event-handler situation this is the best i have
-        """
-        return list(set([OutlookItem(item) for item in self._folder.Items]))
+        return self._folder.Name     
     def OnItemAdd(self, mail):
         """mandatory event, name is hard-wired for exchange API"""
         # wrap the mail item, then use it
-        mail = OutlookItem(mail)
+        mail = com_to_python(mail)
         for handler in self._attached_handlers["add"]:
             try:
                 result = handler(mail)
@@ -67,7 +69,7 @@ class OutlookFolder(object):
                 print(e)
                 ctypes.windll.user32.PostQuitMessage(0)
     def OnItemChange(self, mail):
-        mail = OutlookItem(mail)
+        mail = com_to_python(mail)
         for handler in self._attached_handlers["change"]:
             try:
                 result = handler(mail)
@@ -109,7 +111,7 @@ class OutlookFolder(object):
         # anything in this object that is modified on the fly needs to be mirrored in the proxy object
         self._internal_proxy._attached_handlers = self._attached_handlers
     def dispatch_unread(self):
-        for mail_item in list(self.items):
+        for mail_item in self:
             if not mail_item.read:
                 result = None
                 for handler in self._attached_handlers["add"]:
@@ -119,7 +121,3 @@ class OutlookFolder(object):
     @property
     def folders(self) -> Dict[str,OutlookFolder]:
         return self._folders
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.name})"
-    def __hash__(self):
-        return hash(self._local_id)

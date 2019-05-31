@@ -1,18 +1,21 @@
 from outlookpy import OutlookPy
+from outlookpy.outlookitem import *
 
 my_outlook = OutlookPy()
 print("Initializing handler functions")
 
 @my_outlook.inbox.on_item_received()
 def debug_handler(mail_item):
-    print(f"""
-Sender: {mail_item.sender}
-Subject: {mail_item.subject}
-""")
+    # type check required, tasks might not have a sender
+    if mail_item is not OutlookTaskItem:
+        print(f"Sender: {mail_item.sender}")
+    # type check not required, all mail sub classes have a subject
+    print(f"Subject: {mail_item.subject}")
     return True
 
 @my_outlook.deleted.on_item_received()
 def deleted_test(mail_item):
+    # type check not required, all mail sub classes have a subject
     print(f"mail item {mail_item.subject} deleted")
     
 
