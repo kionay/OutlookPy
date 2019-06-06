@@ -34,6 +34,10 @@ class OutlookFolder(list):
     def __iter__(self):
         for item in self._MAPI_items:
             yield com_to_python(item)
+    def __getitem__(self, key):
+        return com_to_python(list(self._MAPI_items)[key])
+    def __len__(self):
+        return len(self._MAPI_items)
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name})"
     def __hash__(self):
