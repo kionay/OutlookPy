@@ -6,7 +6,7 @@ import pythoncom
 import win32com.client
 from win32com.client import constants, DispatchBaseClass
 from outlookpy.outlookfolder import OutlookFolder
-from outlookpy.constants import *
+from outlookpy.constants import PR_SMTP_ADDRESS
 
 
 class OutlookPy():

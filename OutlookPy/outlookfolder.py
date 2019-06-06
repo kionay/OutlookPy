@@ -6,9 +6,7 @@ from win32com.client import Dispatch
 import pythoncom
 
 from outlookpy.alternatedispatch import WithEvents
-from outlookpy.outlookitem import OutlookItem
-from outlookpy.helpers import com_to_python
-
+from outlookpy.outlookitem import OutlookItem, com_to_python
 
 class OutlookFolder(list):
     """

@@ -1,14 +1,6 @@
 """Enumerations mimiced from Outlook."""
 from enum import Enum
 
-""" May need divided into 
-AppointmentItem,    26
-JournalItem,        42
-MailItem,           43
-MeetingItem,        54,181,53,55,56,57
-and TaskItem        48, (49,51,52,50)
-"""
-
 class OutlookItemImportance(Enum):
     HIGH = 2
     NORMAL = 1
@@ -68,4 +60,3 @@ class OutlookShowAs(Enum):
     BUSY = 2
     OUT_OF_OFFICE = 3
     WORKING_ELSEWHERE = 4
-
