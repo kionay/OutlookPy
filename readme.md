@@ -32,7 +32,7 @@ __Folders are iterable, check types to use properties unique to a type of item._
 from outlookpy.outlookitem import OutlookMeetingItem
 from outlookpy.enumerables import OutlookResponse
 
-calendar_meetings = [meeting for meeting in my_outlook.calendar if meeting is OutlookMeetingItem]
+calendar_meetings = [meeting for meeting in my_outlook.calendar if type(meeting) is OutlookMeetingItem]
 
 string_mapping = {
     OutlookResponse.organized: "{email} organized this meeting",
@@ -85,7 +85,7 @@ __Messages received are events of the receiving folder.__
 @my_outlook.inbox.on_item_received()
 def debug_handler(mail_item):
     # type check required, tasks might not have a sender
-    if mail_item is not OutlookTaskItem:
+    if type(mail_item) is not OutlookTaskItem:
         print(f"Sender: {mail_item.sender}")
     # type check not required, all mail sub classes have a subject
     print(f"Subject: {mail_item.subject}")
