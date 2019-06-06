@@ -7,8 +7,9 @@ from pywintypes import com_error
 from outlookpy.constants import *
 if TYPE_CHECKING:
     from outlookpy.outlookfolder import OutlookFolder
-from .outlookenumerations import OutlookItemType, OutlookResponse, OutlookItemImportance, OutlookItemBodyFormat, OutlookTaskResponse, OutlookTaskStatus, OutlookRecipientType
-from outlookpy import com_to_python
+    from outlookpy.helpers import com_to_python
+from .outlookenumerations import OutlookResponse, OutlookItemImportance, OutlookItemBodyFormat, OutlookTaskResponse, OutlookTaskStatus, OutlookRecipientType, OutlookShowAs
+
 
 class OutlookItem(object):
     """
@@ -34,6 +35,9 @@ class OutlookItem(object):
         return OutlookFolder(self._internal_item.Parent)
     @property
     def parent(self):
+        """
+        The parent of an outlook item is that item that came before it in its conversation.
+        """
         if self._parent is None:
             this_convo = self._internal_item.GetConversation()
             this_parent = this_convo.GetParent(self._internal_item)
@@ -44,11 +48,18 @@ class OutlookItem(object):
         return self._parent
     @property
     def children(self):
+        """
+        The children of an outlook item are those that came after it in its conversation.
+        """
         this_convo = self._internal_item.GetConversation()
         children = [com_to_python(obj) for obj in this_convo.GetChildren(self._internal_item)._dispobj_]
         return children
     @property
     def recipients(self) -> List[str]:
+        """
+            A list of those that were intended to recieve this item.
+            Currently a list of SMTP addresses, in the future an OutlookContact object.
+        """
         # recipeints might have to make an external call to get this information
         # if we already have it for this mail item, we don't need to call the server again
         # the recipients aren't going to spontaneously change
@@ -78,6 +89,14 @@ class OutlookItem(object):
     def unread(self, unread_status: bool):
         self._internal_item.UnRead = unread_status
     def _try_get_sender_remote(self):
+        """
+        Attempt to get the SMTP that sent this item.
+        Sadly, this kludge of a solution works more reliably than the most sophisticated 'proper' log I could create.
+        """
+        # Any given property could be the one that has the SMTP we want.
+        # I have tried to order these properties from most to least likely to be the one we need.
+        # In the far future I imagine running some speed tests on these to see what the distribution of
+        #   properties looks like, in order to order these in as optimal a way as possible.
         remote_properties = [
             PR_SENT_REPRESENTING_EMAIL_ADDRESS_W,
             PR_SENT_REPRESENTING_SMTP_ADDRESS,
@@ -89,22 +108,26 @@ class OutlookItem(object):
         sender_sample = None
         for remote_property in remote_properties:
             try:
+                # try to get each property in our list
                 sender_sample = core_internal_item.PropertyAccessor.GetProperty(remote_property)
             except Exception:
+                # if there is an error, supress it.
                 sender_sample = None
             finally:
+                # if there was not an error, does its format meet our criteria for an 'acceptable' SMTP address?
                 if sender_sample is None or not sender_sample:
                     pass
                 elif "@" not in sender_sample:
                     pass
                 else:
+                    # if we have met all criteria (no error, contains an @ symbol) stop trying more properties
                     break
         return sender_sample
     @property
     def sender(self) -> str:
         if self._sender is not None:
             return self._sender
-        if type(self) == OutlookTaskItem:
+        if type(self) is OutlookTaskItem:
             return None # Tasks are not "sent" so they can have no sender
         smtp = self._try_get_sender_remote()
         if smtp is not None and "@" in smtp:
@@ -171,6 +194,24 @@ class OutlookMailItem(OutlookItem):
 
 class OutlookAppointmentItem(OutlookItem):
     """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.appointmentitem?view=outlook-pia"""
+    @property
+    def show_as(self) -> OutlookShowAs:
+        return OutlookShowAs(self._internal_item.BusyStatus)
+    @property
+    def show_as(self) -> str:
+        return OutlookShowAs(self._internal_item.BusyStatus).name
+    @show_as.setter
+    def show_as(self, busy_status: OutlookShowAs):
+        self._internal_item.BusyStatus = busy_status.value
+    @show_as.setter
+    def show_as(self, busy_status: str):
+        self._internal_item.BusyStatus = OutlookShowAs[busy_status.upper()].value
+
+class OutlookReportItem(OutlookItem):
+    """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook._reportitem?view=outlook-pia
+    usually a non-delivery report
+    I can't find any special properties or members that seem to apply only to reports
+    """
 
 class OutlookMeetingItem(OutlookItem):
     """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.meetingitem?view=outlook-pia"""
@@ -297,7 +338,7 @@ class OutlookTaskItem(OutlookItem):
         return OutlookTaskStatus(self._internal_item.Status).name
     @status.setter
     def status(self, status: str):
-        self._internal_item.Status = OutlookTaskStatus[status].value
+        self._internal_item.Status = OutlookTaskStatus[status.upper()].value
     @status.setter
     def status(self, status: OutlookTaskStatus):
         self._internal_item.Status = status.value

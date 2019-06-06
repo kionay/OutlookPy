@@ -7,7 +7,7 @@ print("Initializing handler functions")
 @my_outlook.inbox.on_item_received()
 def debug_handler(mail_item):
     # type check required, tasks might not have a sender
-    if mail_item is not OutlookTaskItem:
+    if type(mail_item) is not OutlookTaskItem:
         print(f"Sender: {mail_item.sender}")
     # type check not required, all mail sub classes have a subject
     print(f"Subject: {mail_item.subject}")

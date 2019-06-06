@@ -59,5 +59,4 @@ class OutlookPy():
         #  to listen to messages sent to outlook
         #  this is a blocking operation, so we won't have control over this
         #  python thread unless an error triggers PostQuitMessage (WM_QUIT)
-        #   (as seen above in OnItemAdd)
         pythoncom.PumpMessages()

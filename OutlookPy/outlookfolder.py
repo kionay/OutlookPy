@@ -1,6 +1,5 @@
 from __future__ import annotations
 from typing import List, Dict
-from enum import Enum
 
 import win32com.client
 from win32com.client import Dispatch

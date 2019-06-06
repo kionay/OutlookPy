@@ -6,10 +6,12 @@ from enum import Enum
 from .outlookenumerations import *
 from .outlookitem import *
 
+# https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.olobjectclass?view=outlook-pia
 CLASS_LOOKUP = {
     26 : OutlookAppointmentItem,
     42 : OutlookJournalItem,
     43 : OutlookMailItem,
+    46 : OutlookReportItem,
     48 : OutlookTaskItem,
     49 : OutlookTaskItem,
     50 : OutlookTaskItem,
