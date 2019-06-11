@@ -2,7 +2,7 @@
 from datetime import datetime
 from typing import List, Tuple, TYPE_CHECKING
 
-from pywintypes import com_error
+import pythoncom
 
 from outlookpy.constants import *
 #import outlookpy.helpers
@@ -68,7 +68,11 @@ class OutlookItem(object):
             return self._recipients
         recipient_addresses = []
         for recipient in self._internal_item.Recipients:
-            recipient_addresses.append(recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS))
+            try:
+                recipient_addresses.append(recipient.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS))
+            except pythoncom.com_error:
+                print(f"ERROR - could not retrieve SMTP address for name '{recipient.Name}''")
+                recipient_addresses.append(None)
         self._recipients = recipient_addresses
         return recipient_addresses
     @property
@@ -213,6 +217,13 @@ class OutlookReportItem(OutlookItem):
     usually a non-delivery report
     I can't find any special properties or members that seem to apply only to reports
     """
+    @property
+    def received(self) -> datetime:
+        return self._internal_item.CreationTime
+    @property
+    def recipients(self):
+        return [self._internal_item.Session.CurrentUser.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS)]
+
 
 class OutlookMeetingItem(OutlookItem):
     """https://docs.microsoft.com/en-us/dotnet/api/microsoft.office.interop.outlook.meetingitem?view=outlook-pia"""
