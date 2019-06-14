@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import List, Dict
-
+import ctypes
 import win32com.client
 from win32com.client import Dispatch
 import pythoncom
