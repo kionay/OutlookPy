@@ -11,6 +11,7 @@ class OutlookItemBodyFormat(Enum):
     PLAIN = 1
     RICH_TEXT = 2
     HTML = 3
+    CLEAR_SIGNED = 4
 
 class OutlookRecipientType(Enum):
     """https://docs.microsoft.com/en-us/office/vba/api/outlook.recipient.type"""

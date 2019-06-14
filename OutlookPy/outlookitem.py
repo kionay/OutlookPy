@@ -1,6 +1,7 @@
 """All outlook item wrappers."""
 from datetime import datetime
-from typing import List, Tuple, TYPE_CHECKING
+import json
+from typing import List, Tuple, Dict, Optional, TYPE_CHECKING
 
 import pythoncom
 
@@ -33,7 +34,7 @@ class OutlookItem(object):
         self._internal_item = self._internal_item.Move(folder._folder) 
     @property
     def containing_folder(self):
-        return OutlookFolder(self._internal_item.Parent)
+        return outlookpy.OutlookFolder(self._internal_item.Parent)
     @property
     def parent(self):
         """
@@ -129,7 +130,7 @@ class OutlookItem(object):
                     break
         return sender_sample
     @property
-    def sender(self) -> str:
+    def sender(self) -> Optional[str]:
         if self._sender is not None:
             return self._sender
         if type(self) is OutlookTaskItem:
@@ -139,7 +140,18 @@ class OutlookItem(object):
             self._sender = smtp
             return smtp
         return None
-
+    @property
+    def sentiment(self) -> Optional[Dict(str, float)]:
+        try:
+            sentiment_object = self._internal_item.PropertyAccessor.GetProperty(EntityExtraction_Sentiment1_0)
+        except Exception:
+            sentiment_object = None
+        if sentiment_object is None:
+            return None
+        sentiment = json.loads(sentiment_object)[0]
+        polarity = sentiment["sentiment"]["polarity"]
+        confidence = float(sentiment["sentiment"]["confidence"])
+        return {"polarity":polarity,"confidence":confidence}
     @property
     def body(self) -> str:
         return self._internal_item.Body
@@ -156,7 +168,7 @@ class OutlookItem(object):
         # Sender Email Type 'EX' stands for 'EXchange' not 'external
         return self._internal_item.SenderEmailType == "EX"
     @property
-    def importance(self) -> OutlookItemImportance:
+    def importance(self) -> Optional[OutlookItemImportance]:
         for item_importance in OutlookItemImportance:
             if self._internal_item.Importance == item_importance.value:
                 return item_importance
@@ -223,6 +235,16 @@ class OutlookReportItem(OutlookItem):
     @property
     def recipients(self):
         return [self._internal_item.Session.CurrentUser.PropertyAccessor.GetProperty(PR_SMTP_ADDRESS)]
+    @property
+    def external(self) -> bool:
+        return self._internal_item.PropertyAccessor.GetProperty(PR_SENDER_ADDRTYPE_W) == "SMTP"
+    @property
+    def internal(self) -> bool:
+        return self._internal_item.PropertyAccessor.GetProperty(PR_SENDER_ADDRTYPE_W) != "SMTP"
+    @property
+    def body_format(self) -> str:
+        body_format = self._internal_item.PropertyAccessor.GetProperty(PR_NATIVE_BODY_INFO)
+        return OutlookItemBodyFormat(body_format).name
 
 
 class OutlookMeetingItem(OutlookItem):
