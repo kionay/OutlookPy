@@ -141,7 +141,7 @@ class OutlookItem(object):
             return smtp
         return None
     @property
-    def sentiment(self) -> Optional[Dict(str, float)]:
+    def sentiment(self) -> Optional[Dict[str, float]]:
         try:
             sentiment_object = self._internal_item.PropertyAccessor.GetProperty(EntityExtraction_Sentiment1_0)
         except Exception:
