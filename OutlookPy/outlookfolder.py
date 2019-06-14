@@ -79,23 +79,23 @@ class OutlookFolder(list):
             except Exception as e:
                 print(e)
                 ctypes.windll.user32.PostQuitMessage(0)
-    def on_item_added(self, *config):
+    def on_item_added(self):
         return self.on_item_received(self, config)
-    def on_item_received(self, *config):
+    def on_item_received(self):
         def decorator(callback):
             self._attached_handlers["add"].append(callback)
             if self._internal_proxy is not None:
                 self._internal_proxy._attached_handlers["add"].append(callback)
             return callback
         return decorator
-    def on_item_removed(self, *config):
+    def on_item_removed(self):
         def decorator(callback):
             self._attached_handlers["remove"].append(callback)
             if self._internal_proxy is not None:
                 self._internal_proxy._attached_handlers["remove"].append(callback)
             return callback
         return decorator
-    def on_item_changed(self, *config):
+    def on_item_changed(self):
         def decorator(callback):
             self._attached_handlers["change"].append(callback)
             if self._internal_proxy is not None:
