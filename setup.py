@@ -28,6 +28,6 @@ setuptools.setup(
     ],
     install_requires=[
         "pypiwin32 == 223",
-        "pywin32 == 224"
+        "pywin32 == 301"
     ],
 )
